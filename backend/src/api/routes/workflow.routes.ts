@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { getTemporalClient } from '../../temporal/client';
 import type { WorkflowDefinition, ExecuteWorkflowRequest } from '../../types/workflow-schema';
 import { activityRegistry } from '../../temporal/activities/activity-registry';
-import { registerSampleActivities } from '../../temporal/activities/sample-activities';
+import { registerSampleActivities } from '../../temporal/activities/activity-implementations';
 
 const router = Router();
 

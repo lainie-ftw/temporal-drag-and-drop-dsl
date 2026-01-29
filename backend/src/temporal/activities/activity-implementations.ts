@@ -1,3 +1,4 @@
+import { log } from '@temporalio/activity';
 import type { ActivityResult } from '../../types/workflow-schema';
 import { activityRegistry } from './activity-registry';
 
@@ -8,7 +9,7 @@ async function sendEmail(args: Record<string, any>): Promise<ActivityResult> {
   const { to, subject, body } = args;
   
   // Simulate email sending
-  console.log(`Sending email to ${to}: ${subject}`);
+  log.info('Sending email', { to, subject });
   await new Promise(resolve => setTimeout(resolve, 1000));
   
   return {
@@ -23,7 +24,7 @@ async function sendEmail(args: Record<string, any>): Promise<ActivityResult> {
 async function httpRequest(args: Record<string, any>): Promise<ActivityResult> {
   const { url, method = 'GET' } = args;
   
-  console.log(`Making ${method} request to ${url}`);
+  log.info('Making HTTP request', { method, url });
   
   try {
     // Simulate HTTP request
@@ -47,7 +48,7 @@ async function httpRequest(args: Record<string, any>): Promise<ActivityResult> {
 async function transformData(args: Record<string, any>): Promise<ActivityResult> {
   const { input, operation } = args;
   
-  console.log(`Transforming data with operation: ${operation}`);
+  log.info('Transforming data', { operation });
   
   let result;
   switch (operation) {
@@ -76,7 +77,7 @@ async function transformData(args: Record<string, any>): Promise<ActivityResult>
 async function wait(args: Record<string, any>): Promise<ActivityResult> {
   const { seconds = 1 } = args;
   
-  console.log(`Waiting for ${seconds} seconds`);
+  log.info('Waiting', { seconds });
   await new Promise(resolve => setTimeout(resolve, seconds * 1000));
   
   return {
@@ -91,7 +92,7 @@ async function wait(args: Record<string, any>): Promise<ActivityResult> {
 async function logMessage(args: Record<string, any>): Promise<ActivityResult> {
   const { message, level = 'info' } = args;
   
-  console.log(`[${level.toUpperCase()}] ${message}`);
+  log.info('Log message activity', { message, level });
   
   return {
     success: true,
@@ -102,7 +103,7 @@ async function logMessage(args: Record<string, any>): Promise<ActivityResult> {
 /**
  * Register all sample activities
  */
-export function registerSampleActivities(): void {
+export function registerActivities(): void {
   activityRegistry.register('sendEmail', sendEmail);
   activityRegistry.register('httpRequest', httpRequest);
   activityRegistry.register('transformData', transformData);

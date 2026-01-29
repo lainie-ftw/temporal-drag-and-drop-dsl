@@ -1,4 +1,4 @@
-import { proxyActivities } from '@temporalio/workflow';
+import { proxyActivities, log } from '@temporalio/workflow';
 import type { WorkflowDefinition, Step, ActivityResult } from '../../types/workflow-schema';
 
 // Proxy activities with default timeout
@@ -15,7 +15,7 @@ export async function dslWorkflow(
   workflowDef: WorkflowDefinition,
   input: Record<string, any> = {}
 ): Promise<Record<string, any>> {
-  console.log(`Starting DSL workflow: ${workflowDef.name}`);
+  log.info('Starting DSL workflow', { workflowName: workflowDef.name });
   
   // Initialize workflow state - stores results of each step
   const workflowState: Record<string, any> = { ...input };
@@ -40,7 +40,7 @@ async function executeStep(
   allSteps: Step[],
   state: Record<string, any>
 ): Promise<void> {
-  console.log(`Executing step: ${step.name} (${step.type})`);
+  log.debug('Executing step', { stepName: step.name, stepType: step.type });
   
   switch (step.type) {
     case 'activity':
