@@ -8,6 +8,7 @@ import { useTemporalAPI } from './hooks/useTemporalAPI';
 import { serializeWorkflow, serializeWorkflowToYaml } from './utils/workflowSerializer';
 import { deserializeWorkflowFromYaml } from './utils/workflowDeserializer';
 import type { WorkflowNode } from './types/workflow.types';
+import type { ActivitySchema } from './types/activity-schema.types';
 
 function App() {
   const [nodes, setNodes] = useState<WorkflowNode[]>([
@@ -27,16 +28,16 @@ function App() {
   
   const [edges, setEdges] = useState<any[]>([]);
   const [workflowName, setWorkflowName] = useState('My Workflow');
-  const [availableActivities, setAvailableActivities] = useState<string[]>([]);
+  const [activitySchemas, setActivitySchemas] = useState<ActivitySchema[]>([]);
   
-  const { executeWorkflow, getAvailableActivities, loading, error } = useTemporalAPI();
+  const { executeWorkflow, getActivitySchemas, loading, error } = useTemporalAPI();
 
   // Load available activities on mount
   useEffect(() => {
     const loadActivities = async () => {
-      const activities = await getAvailableActivities();
-      console.log('Activities loaded from backend:', activities);
-      setAvailableActivities(activities);
+      const schemas = await getActivitySchemas();
+      console.log('Activity schemas loaded from backend:', schemas);
+      setActivitySchemas(schemas);
     };
     loadActivities();
     // This effect should only run once on mount
@@ -163,7 +164,7 @@ function App() {
       }}>
         <NodePalette 
           onAddNode={addNode}
-          availableActivities={availableActivities}
+          activitySchemas={activitySchemas}
         />
         
         <div style={{ 
@@ -189,6 +190,7 @@ function App() {
             deleteNode(nodeId);
             setSelectedNodeId(null);
           }}
+          activitySchemas={activitySchemas}
         />
       </div>
       

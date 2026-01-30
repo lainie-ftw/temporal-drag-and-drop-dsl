@@ -65,14 +65,32 @@ router.get('/result/:workflowId', async (req, res) => {
 });
 
 /**
- * Get available activities
+ * Get available activities with their schemas
  */
 router.get('/activities', async (req, res) => {
   try {
-    const activities = activityRegistry.getAvailableActivities();
-    res.json({ activities });
+    const schemas = activityRegistry.getAllSchemas();
+    res.json({ schemas });
   } catch (error) {
     res.status(500).json({ error: 'Failed to get activities' });
+  }
+});
+
+/**
+ * Get schema for a specific activity
+ */
+router.get('/activities/:activityName/schema', async (req, res) => {
+  try {
+    const { activityName } = req.params;
+    const schema = activityRegistry.getSchema(activityName);
+    
+    if (!schema) {
+      return res.status(404).json({ error: `Activity '${activityName}' not found` });
+    }
+    
+    res.json({ schema });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to get activity schema' });
   }
 });
 

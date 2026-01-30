@@ -1,5 +1,6 @@
 import { log } from '@temporalio/activity';
 import type { ActivityResult } from '../../types/workflow-schema';
+import type { ActivitySchema } from '../../types/activity-schema';
 import { activityRegistry } from './activity-registry';
 
 /**
@@ -101,12 +102,146 @@ async function logMessage(args: Record<string, any>): Promise<ActivityResult> {
 }
 
 /**
+ * Activity schemas defining parameters and their types
+ */
+const sendEmailSchema: ActivitySchema = {
+  name: 'sendEmail',
+  label: 'Send Email',
+  description: 'Send an email message',
+  category: 'Communication',
+  parameters: [
+    {
+      name: 'to',
+      label: 'Recipient Email',
+      type: 'string',
+      required: true,
+      helpText: 'Email address of the recipient',
+      placeholder: 'user@example.com',
+    },
+    {
+      name: 'subject',
+      label: 'Subject',
+      type: 'string',
+      required: true,
+      helpText: 'Email subject line',
+      placeholder: 'Enter subject...',
+    },
+    {
+      name: 'body',
+      label: 'Message Body',
+      type: 'string',
+      required: true,
+      helpText: 'Email message content',
+      placeholder: 'Enter message...',
+      multiline: true,
+    },
+  ],
+};
+
+const httpRequestSchema: ActivitySchema = {
+  name: 'httpRequest',
+  label: 'HTTP Request',
+  description: 'Make an HTTP request to an external API',
+  category: 'Integration',
+  parameters: [
+    {
+      name: 'url',
+      label: 'URL',
+      type: 'string',
+      required: true,
+      helpText: 'The URL to make the request to',
+      placeholder: 'https://api.example.com/endpoint',
+    },
+    {
+      name: 'method',
+      label: 'HTTP Method',
+      type: 'enum',
+      required: false,
+      default: 'GET',
+      helpText: 'HTTP method to use',
+      options: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+    },
+  ],
+};
+
+const transformDataSchema: ActivitySchema = {
+  name: 'transformData',
+  label: 'Transform Data',
+  description: 'Transform text data using various operations',
+  category: 'Data Processing',
+  parameters: [
+    {
+      name: 'input',
+      label: 'Input Text',
+      type: 'string',
+      required: true,
+      helpText: 'The text to transform',
+      placeholder: 'Enter text or use ${variableName}',
+    },
+    {
+      name: 'operation',
+      label: 'Operation',
+      type: 'enum',
+      required: true,
+      helpText: 'Transformation to apply',
+      options: ['uppercase', 'lowercase', 'reverse'],
+    },
+  ],
+};
+
+const waitSchema: ActivitySchema = {
+  name: 'wait',
+  label: 'Wait / Delay',
+  description: 'Pause workflow execution for a specified duration',
+  category: 'Flow Control',
+  parameters: [
+    {
+      name: 'seconds',
+      label: 'Duration (seconds)',
+      type: 'number',
+      required: false,
+      default: 1,
+      min: 0,
+      max: 3600,
+      helpText: 'Number of seconds to wait',
+    },
+  ],
+};
+
+const logMessageSchema: ActivitySchema = {
+  name: 'logMessage',
+  label: 'Log Message',
+  description: 'Log a message during workflow execution',
+  category: 'Debugging',
+  parameters: [
+    {
+      name: 'message',
+      label: 'Message',
+      type: 'string',
+      required: true,
+      helpText: 'The message to log',
+      placeholder: 'Enter log message...',
+      multiline: true,
+    },
+    {
+      name: 'level',
+      label: 'Log Level',
+      type: 'enum',
+      required: false,
+      default: 'info',
+      helpText: 'Severity level of the log message',
+      options: ['debug', 'info', 'warn', 'error'],
+    },
+  ],
+};
+
+/**
  * Register all sample activities
  */
 export function registerActivities(): void {
-  activityRegistry.register('sendEmail', sendEmail);
-  activityRegistry.register('httpRequest', httpRequest);
-  activityRegistry.register('transformData', transformData);
-  activityRegistry.register('wait', wait);
-  activityRegistry.register('logMessage', logMessage);
+  activityRegistry.register('sendEmail', sendEmail, sendEmailSchema);
+  activityRegistry.register('httpRequest', httpRequest, httpRequestSchema);
+  activityRegistry.register('transformData', transformData, transformDataSchema);
+  activityRegistry.register('wait', wait, waitSchema);
+  activityRegistry.register('logMessage', logMessage, logMessageSchema);
 }

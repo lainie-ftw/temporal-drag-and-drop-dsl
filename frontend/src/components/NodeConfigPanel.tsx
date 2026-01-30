@@ -1,13 +1,25 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import type { WorkflowNode } from '../types/workflow.types';
+import type { ActivitySchema } from '../types/activity-schema.types';
+import { DynamicFormField } from './DynamicFormFields';
 
 interface NodeConfigPanelProps {
   node: WorkflowNode | null;
   onUpdate: (nodeId: string, data: any) => void;
   onDelete: (nodeId: string) => void;
+  activitySchemas: ActivitySchema[];
 }
 
-const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onUpdate, onDelete }) => {
+const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onUpdate, onDelete, activitySchemas }) => {
+  const [advancedMode, setAdvancedMode] = useState(false);
+  const [jsonError, setJsonError] = useState<string | null>(null);
+
+  // Reset advanced mode when node changes
+  useEffect(() => {
+    setAdvancedMode(false);
+    setJsonError(null);
+  }, [node?.id]);
+
   if (!node || node.data.stepType === 'start' || node.data.stepType === 'end') {
     return (
       <div style={{
@@ -84,9 +96,9 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onUpdate, onDel
     onUpdate(node.id, { label: e.target.value });
   };
 
-  const handleArgumentChange = (key: string, value: string) => {
+  const handleParameterChange = (paramName: string, value: any) => {
     const currentArgs = node.data.arguments || {};
-    onUpdate(node.id, { arguments: { ...currentArgs, [key]: value } });
+    onUpdate(node.id, { arguments: { ...currentArgs, [paramName]: value } });
   };
 
   const handleResultVariableChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -98,6 +110,21 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onUpdate, onDel
       onDelete(node.id);
     }
   };
+
+  const handleJsonChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    try {
+      const parsed = JSON.parse(e.target.value);
+      onUpdate(node.id, { arguments: parsed });
+      setJsonError(null);
+    } catch (err) {
+      setJsonError(err instanceof Error ? err.message : 'Invalid JSON');
+    }
+  };
+
+  // Find the schema for this activity
+  const activitySchema = node.data.activityName 
+    ? activitySchemas.find(s => s.name === node.data.activityName)
+    : null;
 
   return (
     <div style={{
@@ -170,7 +197,7 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onUpdate, onDel
             />
           </FormField>
 
-          {node.data.activityName && (
+          {node.data.activityName && activitySchema && (
             <FormField label="Activity Type">
               <div style={{
                 padding: 'var(--space-3)',
@@ -181,49 +208,129 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onUpdate, onDel
                 fontWeight: 500,
                 color: 'var(--secondary-700)',
                 display: 'flex',
-                alignItems: 'center',
-                gap: 'var(--space-2)',
+                flexDirection: 'column',
+                gap: 'var(--space-1)',
               }}>
-                <span style={{ fontSize: '1rem' }}>⚡</span>
-                {node.data.activityName}
+                <div style={{ display: 'flex', alignItems: 'center', gap: 'var(--space-2)' }}>
+                  <span style={{ fontSize: '1rem' }}>⚡</span>
+                  <span style={{ fontWeight: 600 }}>{activitySchema.label}</span>
+                </div>
+                {activitySchema.description && (
+                  <div style={{
+                    fontSize: '0.75rem',
+                    color: 'var(--secondary-600)',
+                    marginTop: 'var(--space-1)',
+                  }}>
+                    {activitySchema.description}
+                  </div>
+                )}
               </div>
             </FormField>
           )}
         </FormSection>
 
-        {node.data.activityName && (
+        {node.data.activityName && activitySchema && (
           <>
             <FormSection title="Configuration">
-              <FormField 
-                label="Arguments" 
-                helpText="JSON object with activity parameters. Use ${variableName} for variable references"
-              >
-                <textarea
-                  value={JSON.stringify(node.data.arguments || {}, null, 2)}
-                  onChange={(e) => {
-                    try {
-                      const parsed = JSON.parse(e.target.value);
-                      onUpdate(node.id, { arguments: parsed });
-                    } catch (err) {
-                      // Ignore parse errors while typing
-                    }
-                  }}
-                  placeholder='{\n  "key": "value"\n}'
+              {/* Mode Toggle */}
+              <div style={{
+                display: 'flex',
+                gap: 'var(--space-2)',
+                marginBottom: 'var(--space-2)',
+              }}>
+                <button
+                  onClick={() => setAdvancedMode(false)}
                   style={{
-                    width: '100%',
-                    padding: 'var(--space-3)',
-                    border: '1px solid var(--secondary-300)',
+                    flex: 1,
+                    padding: 'var(--space-2)',
+                    background: !advancedMode ? 'var(--primary-500)' : 'white',
+                    color: !advancedMode ? 'white' : 'var(--secondary-700)',
+                    border: `1px solid ${!advancedMode ? 'var(--primary-500)' : 'var(--secondary-300)'}`,
                     borderRadius: 'var(--radius-md)',
-                    fontSize: '0.8125rem',
-                    fontFamily: 'var(--font-mono)',
-                    minHeight: '120px',
-                    resize: 'vertical',
-                    lineHeight: 1.5,
-                    background: 'var(--secondary-50)',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
                     transition: 'all var(--transition-fast)',
                   }}
-                />
-              </FormField>
+                >
+                  Form Mode
+                </button>
+                <button
+                  onClick={() => setAdvancedMode(true)}
+                  style={{
+                    flex: 1,
+                    padding: 'var(--space-2)',
+                    background: advancedMode ? 'var(--primary-500)' : 'white',
+                    color: advancedMode ? 'white' : 'var(--secondary-700)',
+                    border: `1px solid ${advancedMode ? 'var(--primary-500)' : 'var(--secondary-300)'}`,
+                    borderRadius: 'var(--radius-md)',
+                    cursor: 'pointer',
+                    fontSize: '0.75rem',
+                    fontWeight: 600,
+                    transition: 'all var(--transition-fast)',
+                  }}
+                >
+                  Advanced (JSON)
+                </button>
+              </div>
+
+              {!advancedMode ? (
+                // Dynamic Form Fields
+                <>
+                  {activitySchema.parameters.map(param => (
+                    <FormField
+                      key={param.name}
+                      label={param.label}
+                      required={param.required}
+                      helpText={param.helpText}
+                    >
+                      <DynamicFormField
+                        parameter={param}
+                        value={node.data.arguments?.[param.name]}
+                        onChange={(value) => handleParameterChange(param.name, value)}
+                      />
+                    </FormField>
+                  ))}
+                </>
+              ) : (
+                // JSON Editor
+                <FormField 
+                  label="Arguments (JSON)" 
+                  helpText="Edit arguments as JSON. Use ${variableName} for variable references"
+                >
+                  <textarea
+                    value={JSON.stringify(node.data.arguments || {}, null, 2)}
+                    onChange={handleJsonChange}
+                    placeholder='{\n  "key": "value"\n}'
+                    style={{
+                      width: '100%',
+                      padding: 'var(--space-3)',
+                      border: `1px solid ${jsonError ? 'var(--danger-500)' : 'var(--secondary-300)'}`,
+                      borderRadius: 'var(--radius-md)',
+                      fontSize: '0.8125rem',
+                      fontFamily: 'var(--font-mono)',
+                      minHeight: '150px',
+                      resize: 'vertical',
+                      lineHeight: 1.5,
+                      background: 'var(--secondary-50)',
+                      transition: 'all var(--transition-fast)',
+                    }}
+                  />
+                  {jsonError && (
+                    <div style={{
+                      marginTop: 'var(--space-2)',
+                      padding: 'var(--space-2)',
+                      background: 'var(--danger-50)',
+                      border: '1px solid var(--danger-200)',
+                      borderRadius: 'var(--radius-sm)',
+                      fontSize: '0.75rem',
+                      color: 'var(--danger-700)',
+                    }}>
+                      {jsonError}
+                    </div>
+                  )}
+                </FormField>
+              )}
 
               <FormField 
                 label="Result Variable" 

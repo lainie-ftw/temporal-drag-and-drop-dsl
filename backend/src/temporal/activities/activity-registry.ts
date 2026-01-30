@@ -1,4 +1,5 @@
 import type { ActivityResult } from '../../types/workflow-schema';
+import type { ActivitySchema } from '../../types/activity-schema';
 
 /**
  * Type for activity functions
@@ -10,12 +11,23 @@ export type ActivityFunction = (args: Record<string, any>) => Promise<ActivityRe
  */
 class ActivityRegistry {
   private activities: Map<string, ActivityFunction> = new Map();
+  private schemas: Map<string, ActivitySchema> = new Map();
 
   /**
-   * Register an activity function
+   * Register an activity function with optional schema
    */
-  register(name: string, fn: ActivityFunction): void {
+  register(name: string, fn: ActivityFunction, schema?: ActivitySchema): void {
     this.activities.set(name, fn);
+    if (schema) {
+      this.schemas.set(name, schema);
+    }
+  }
+
+  /**
+   * Register or update an activity schema
+   */
+  registerSchema(name: string, schema: ActivitySchema): void {
+    this.schemas.set(name, schema);
   }
 
   /**
@@ -23,6 +35,13 @@ class ActivityRegistry {
    */
   get(name: string): ActivityFunction | undefined {
     return this.activities.get(name);
+  }
+
+  /**
+   * Get an activity schema by name
+   */
+  getSchema(name: string): ActivitySchema | undefined {
+    return this.schemas.get(name);
   }
 
   /**
@@ -37,6 +56,13 @@ class ActivityRegistry {
    */
   getAvailableActivities(): string[] {
     return Array.from(this.activities.keys());
+  }
+
+  /**
+   * Get all activity schemas
+   */
+  getAllSchemas(): ActivitySchema[] {
+    return Array.from(this.schemas.values());
   }
 }
 

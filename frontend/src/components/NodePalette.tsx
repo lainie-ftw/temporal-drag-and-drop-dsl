@@ -1,11 +1,12 @@
 import React from 'react';
+import type { ActivitySchema } from '../types/activity-schema.types';
 
 interface NodePaletteProps {
   onAddNode: (type: string, activityName?: string) => void;
-  availableActivities: string[];
+  activitySchemas: ActivitySchema[];
 }
 
-const NodePalette: React.FC<NodePaletteProps> = ({ onAddNode, availableActivities }) => {
+const NodePalette: React.FC<NodePaletteProps> = ({ onAddNode, activitySchemas }) => {
   return (
     <div style={{ 
       width: '280px',
@@ -59,7 +60,7 @@ const NodePalette: React.FC<NodePaletteProps> = ({ onAddNode, availableActivitie
         overflowY: 'auto',
         padding: 'var(--space-4)',
       }}>
-        {availableActivities.length === 0 ? (
+        {activitySchemas.length === 0 ? (
           <div style={{
             textAlign: 'center',
             padding: 'var(--space-8) var(--space-4)',
@@ -92,11 +93,11 @@ const NodePalette: React.FC<NodePaletteProps> = ({ onAddNode, availableActivitie
             flexDirection: 'column',
             gap: 'var(--space-2)',
           }}>
-            {availableActivities.map(activity => (
+            {activitySchemas.map(schema => (
               <ActivityButton
-                key={activity}
-                activity={activity}
-                onClick={() => onAddNode('activity', activity)}
+                key={schema.name}
+                schema={schema}
+                onClick={() => onAddNode('activity', schema.name)}
               />
             ))}
           </div>
@@ -130,20 +131,22 @@ const NodePalette: React.FC<NodePaletteProps> = ({ onAddNode, availableActivitie
 };
 
 interface ActivityButtonProps {
-  activity: string;
+  schema: ActivitySchema;
   onClick: () => void;
 }
 
-const ActivityButton: React.FC<ActivityButtonProps> = ({ activity, onClick }) => {
+const ActivityButton: React.FC<ActivityButtonProps> = ({ schema, onClick }) => {
   const [isHovered, setIsHovered] = React.useState(false);
 
-  const getActivityIcon = (name: string): string => {
-    if (name.toLowerCase().includes('email') || name.toLowerCase().includes('mail')) return '📧';
-    if (name.toLowerCase().includes('http') || name.toLowerCase().includes('fetch')) return '🌐';
-    if (name.toLowerCase().includes('log')) return '📝';
-    if (name.toLowerCase().includes('data') || name.toLowerCase().includes('process')) return '⚙️';
-    if (name.toLowerCase().includes('save') || name.toLowerCase().includes('store')) return '💾';
-    if (name.toLowerCase().includes('send')) return '📤';
+  const getActivityIcon = (category?: string): string => {
+    if (!category) return '⚡';
+    const cat = category.toLowerCase();
+    if (cat.includes('communication')) return '📧';
+    if (cat.includes('integration')) return '🌐';
+    if (cat.includes('debug')) return '📝';
+    if (cat.includes('data') || cat.includes('processing')) return '⚙️';
+    if (cat.includes('storage')) return '💾';
+    if (cat.includes('flow') || cat.includes('control')) return '⏱️';
     return '⚡';
   };
 
@@ -182,7 +185,7 @@ const ActivityButton: React.FC<ActivityButtonProps> = ({ activity, onClick }) =>
         flexShrink: 0,
         transition: 'all var(--transition-fast)',
       }}>
-        {getActivityIcon(activity)}
+        {getActivityIcon(schema.category)}
       </div>
       <div style={{ flex: 1, minWidth: 0 }}>
         <div style={{
@@ -195,13 +198,16 @@ const ActivityButton: React.FC<ActivityButtonProps> = ({ activity, onClick }) =>
           whiteSpace: 'nowrap',
           transition: 'color var(--transition-fast)',
         }}>
-          {activity}
+          {schema.label}
         </div>
         <div style={{
           fontSize: '0.75rem',
           color: 'var(--secondary-500)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap',
         }}>
-          Click to add
+          {schema.description || 'Click to add'}
         </div>
       </div>
       <div style={{
