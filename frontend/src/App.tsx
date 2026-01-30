@@ -140,7 +140,12 @@ function App() {
   };
 
   return (
-    <div style={{ height: '100vh', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ 
+      height: '100vh', 
+      display: 'flex', 
+      flexDirection: 'column',
+      background: 'var(--secondary-50)',
+    }}>
       <WorkflowToolbar
         workflowName={workflowName}
         onNameChange={setWorkflowName}
@@ -150,15 +155,22 @@ function App() {
         onImport={handleImport}
       />
       
-      <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
-        <div style={{ width: '250px', padding: '16px', borderRight: '1px solid #ddd' }}>
-          <NodePalette 
-            onAddNode={addNode}
-            availableActivities={availableActivities}
-          />
-        </div>
+      <div style={{ 
+        display: 'flex', 
+        flex: 1, 
+        overflow: 'hidden',
+        gap: '0',
+      }}>
+        <NodePalette 
+          onAddNode={addNode}
+          availableActivities={availableActivities}
+        />
         
-        <div style={{ flex: 1 }}>
+        <div style={{ 
+          flex: 1,
+          background: 'white',
+          position: 'relative',
+        }}>
           <ReactFlowProvider>
             <WorkflowCanvas
               initialNodes={nodes}
@@ -187,16 +199,45 @@ function App() {
           left: 0,
           right: 0,
           bottom: 0,
-          background: 'rgba(0,0,0,0.3)',
+          background: 'rgba(15, 23, 42, 0.7)',
+          backdropFilter: 'blur(4px)',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          color: '#fff',
-          fontSize: '24px',
+          zIndex: 9999,
         }}>
-          Loading...
+          <div style={{
+            background: 'white',
+            padding: 'var(--space-8)',
+            borderRadius: 'var(--radius-xl)',
+            boxShadow: 'var(--shadow-xl)',
+            textAlign: 'center',
+          }}>
+            <div style={{
+              width: '48px',
+              height: '48px',
+              border: '4px solid var(--primary-100)',
+              borderTopColor: 'var(--primary-600)',
+              borderRadius: '50%',
+              animation: 'spin 1s linear infinite',
+              margin: '0 auto var(--space-4)',
+            }} />
+            <div style={{
+              fontSize: '1.125rem',
+              fontWeight: 600,
+              color: 'var(--secondary-900)',
+            }}>
+              Loading...
+            </div>
+          </div>
         </div>
       )}
+      
+      <style>{`
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }

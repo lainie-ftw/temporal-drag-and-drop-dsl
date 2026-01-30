@@ -2,12 +2,12 @@ import { Router } from 'express';
 import { getTemporalClient } from '../../temporal/client';
 import type { WorkflowDefinition, ExecuteWorkflowRequest } from '../../types/workflow-schema';
 import { activityRegistry } from '../../temporal/activities/activity-registry';
-import { registerSampleActivities } from '../../temporal/activities/activity-implementations';
+import { registerActivities } from '../../temporal/activities/activity-implementations';
 
 const router = Router();
 
 // Initialize activities on route setup
-registerSampleActivities();
+registerActivities();
 
 /**
  * Execute a workflow from definition

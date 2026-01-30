@@ -8,6 +8,8 @@ import ReactFlow, {
   type Connection,
   BackgroundVariant,
   type NodeTypes,
+  type Edge,
+  MarkerType,
 } from 'reactflow';
 import 'reactflow/dist/style.css';
 
@@ -63,13 +65,32 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
     endNode: EndNode,
   }), []);
 
+  // Default edge styling
+  const defaultEdgeOptions = useMemo(() => ({
+    type: 'smoothstep',
+    animated: true,
+    style: { 
+      stroke: '#3b82f6',
+      strokeWidth: 2,
+    },
+    markerEnd: {
+      type: MarkerType.ArrowClosed,
+      width: 20,
+      height: 20,
+      color: '#3b82f6',
+    },
+  }), []);
+
   const onConnect = useCallback(
     (params: Connection) => {
-      const newEdges = addEdge(params, edges);
+      const newEdges = addEdge({
+        ...params,
+        ...defaultEdgeOptions,
+      }, edges);
       setEdges(newEdges);
       onEdgesChange?.(newEdges);
     },
-    [edges, setEdges, onEdgesChange]
+    [edges, setEdges, onEdgesChange, defaultEdgeOptions]
   );
 
   const onNodesChangeInternal = useCallback(
@@ -88,8 +109,16 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
     [onNodeSelect]
   );
 
+  const onPaneClickInternal = useCallback(() => {
+    onNodeSelect?.(null);
+  }, [onNodeSelect]);
+
   return (
-    <div ref={reactFlowWrapper} style={{ width: '100%', height: '600px' }}>
+    <div ref={reactFlowWrapper} style={{ 
+      width: '100%', 
+      height: '100%',
+      position: 'relative',
+    }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -97,13 +126,53 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
         onEdgesChange={handleEdgesChange}
         onConnect={onConnect}
         onNodeClick={onNodeClickInternal}
-        onPaneClick={() => onNodeSelect?.(null)}
+        onPaneClick={onPaneClickInternal}
         nodeTypes={nodeTypes}
+        defaultEdgeOptions={defaultEdgeOptions}
+        selectNodesOnDrag={false}
         fitView
+        fitViewOptions={{
+          padding: 0.2,
+          minZoom: 0.5,
+          maxZoom: 1.5,
+        }}
+        minZoom={0.1}
+        maxZoom={2}
+        proOptions={{ hideAttribution: true }}
       >
-        <Background variant={BackgroundVariant.Dots} />
+        <Background 
+          variant={BackgroundVariant.Dots}
+          gap={16}
+          size={1}
+          color="#cbd5e1"
+          style={{
+            backgroundColor: '#f8fafc',
+          }}
+        />
         <Controls />
       </ReactFlow>
+      
+      {/* Watermark */}
+      <div style={{
+        position: 'absolute',
+        bottom: 'var(--space-4)',
+        right: 'var(--space-4)',
+        padding: 'var(--space-2) var(--space-3)',
+        background: 'rgba(255, 255, 255, 0.9)',
+        backdropFilter: 'blur(8px)',
+        border: '1px solid var(--secondary-200)',
+        borderRadius: 'var(--radius-md)',
+        fontSize: '0.75rem',
+        color: 'var(--secondary-600)',
+        display: 'flex',
+        alignItems: 'center',
+        gap: 'var(--space-2)',
+        boxShadow: 'var(--shadow-sm)',
+        pointerEvents: 'none',
+      }}>
+        <span style={{ fontSize: '1rem' }}>⚡</span>
+        <span style={{ fontWeight: 500 }}>Temporal Workflow Builder</span>
+      </div>
     </div>
   );
 };
