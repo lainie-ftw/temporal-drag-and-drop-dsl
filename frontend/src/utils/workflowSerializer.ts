@@ -34,9 +34,25 @@ export function serializeWorkflow(
           step.type = 'parallel';
           step.branches = outgoingEdges.map(e => e.target);
         } else if (node.data.stepType === 'condition') {
-          // Assuming edges are labeled or ordered for success/failure
-          step.onSuccess = outgoingEdges[0]?.target;
-          step.onFailure = outgoingEdges[1]?.target;
+          // Handle conditional edges based on sourceHandle
+          outgoingEdges.forEach(edge => {
+            if (edge.sourceHandle === 'success') {
+              step.onSuccess = edge.target;
+            } else if (edge.sourceHandle === 'failure') {
+              step.onFailure = edge.target;
+            }
+          });
+          
+          // Fallback: if no sourceHandle, use label or order
+          if (!step.onSuccess && !step.onFailure) {
+            outgoingEdges.forEach((edge, index) => {
+              if (edge.label === '✓ Success' || index === 0) {
+                step.onSuccess = edge.target;
+              } else if (edge.label === '✗ Failure' || index === 1) {
+                step.onFailure = edge.target;
+              }
+            });
+          }
         } else {
           step.next = outgoingEdges[0].target;
         }

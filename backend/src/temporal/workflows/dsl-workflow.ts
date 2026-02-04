@@ -217,8 +217,14 @@ function evaluateCondition(
       return actualValue > value;
     case 'lessThan':
       return actualValue < value;
+    case 'greaterThanOrEqual':
+      return actualValue >= value;
+    case 'lessThanOrEqual':
+      return actualValue <= value;
     case 'exists':
       return actualValue !== undefined;
+    case 'notExists':
+      return actualValue === undefined;
     default:
       return false;
   }

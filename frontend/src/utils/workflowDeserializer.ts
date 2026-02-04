@@ -28,7 +28,7 @@ export function deserializeWorkflow(
   workflow.steps.forEach((step, index) => {
     const node: WorkflowNode = {
       id: step.id,
-      type: 'activityNode',
+      type: step.type === 'condition' ? 'conditionNode' : 'activityNode',
       position: { 
         x: 250, 
         y: 150 + (index * 120),
@@ -79,18 +79,26 @@ export function deserializeWorkflow(
       edges.push({
         id: `${step.id}-${step.onSuccess}`,
         source: step.id,
+        sourceHandle: 'success',
         target: step.onSuccess,
-        label: 'success',
-      });
+        label: '✓ Success',
+        style: { stroke: '#10b981', strokeWidth: 2 },
+        animated: true,
+        type: 'smoothstep',
+      } as any);
     }
     
     if (step.onFailure) {
       edges.push({
         id: `${step.id}-${step.onFailure}`,
         source: step.id,
+        sourceHandle: 'failure',
         target: step.onFailure,
-        label: 'failure',
-      });
+        label: '✗ Failure',
+        style: { stroke: '#ef4444', strokeWidth: 2 },
+        animated: true,
+        type: 'smoothstep',
+      } as any);
     }
     
     if (step.branches) {

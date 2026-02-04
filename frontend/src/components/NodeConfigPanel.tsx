@@ -229,6 +229,101 @@ const NodeConfigPanel: React.FC<NodeConfigPanelProps> = ({ node, onUpdate, onDel
           )}
         </FormSection>
 
+        {node.data.stepType === 'condition' && (
+          <FormSection title="Condition Configuration">
+            <FormField 
+              label="Variable" 
+              required
+              helpText="The variable to check (from previous steps)"
+            >
+              <input
+                type="text"
+                value={node.data.arguments?.variable || ''}
+                onChange={(e) => handleParameterChange('variable', e.target.value)}
+                placeholder="e.g., orderStatus"
+                style={{
+                  width: '100%',
+                  padding: 'var(--space-2) var(--space-3)',
+                  border: '1px solid var(--secondary-300)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '0.875rem',
+                  fontFamily: 'var(--font-mono)',
+                  transition: 'all var(--transition-fast)',
+                }}
+              />
+            </FormField>
+
+            <FormField 
+              label="Operator" 
+              required
+              helpText="Comparison operator to use"
+            >
+              <select
+                value={node.data.arguments?.operator || 'equals'}
+                onChange={(e) => handleParameterChange('operator', e.target.value)}
+                style={{
+                  width: '100%',
+                  padding: 'var(--space-2) var(--space-3)',
+                  border: '1px solid var(--secondary-300)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '0.875rem',
+                  background: 'white',
+                  cursor: 'pointer',
+                  transition: 'all var(--transition-fast)',
+                }}
+              >
+                <option value="equals">Equals (==)</option>
+                <option value="notEquals">Not Equals (!=)</option>
+                <option value="greaterThan">Greater Than (&gt;)</option>
+                <option value="lessThan">Less Than (&lt;)</option>
+                <option value="greaterThanOrEqual">Greater Than or Equal (&gt;=)</option>
+                <option value="lessThanOrEqual">Less Than or Equal (&lt;=)</option>
+                <option value="exists">Exists (?)</option>
+                <option value="notExists">Not Exists (!?)</option>
+              </select>
+            </FormField>
+
+            <FormField 
+              label="Value" 
+              helpText="The value to compare against (leave empty for exists/notExists)"
+            >
+              <input
+                type="text"
+                value={node.data.arguments?.value || ''}
+                onChange={(e) => handleParameterChange('value', e.target.value)}
+                placeholder="e.g., approved"
+                disabled={node.data.arguments?.operator === 'exists' || node.data.arguments?.operator === 'notExists'}
+                style={{
+                  width: '100%',
+                  padding: 'var(--space-2) var(--space-3)',
+                  border: '1px solid var(--secondary-300)',
+                  borderRadius: 'var(--radius-md)',
+                  fontSize: '0.875rem',
+                  fontFamily: 'var(--font-mono)',
+                  transition: 'all var(--transition-fast)',
+                  opacity: (node.data.arguments?.operator === 'exists' || node.data.arguments?.operator === 'notExists') ? 0.5 : 1,
+                }}
+              />
+            </FormField>
+
+            <div style={{
+              padding: 'var(--space-3)',
+              background: 'var(--warning-50)',
+              border: '1px solid var(--warning-500)',
+              borderRadius: 'var(--radius-md)',
+              fontSize: '0.75rem',
+              color: 'var(--warning-600)',
+              display: 'flex',
+              gap: 'var(--space-2)',
+            }}>
+              <div style={{ fontSize: '1rem', flexShrink: 0 }}>💡</div>
+              <div style={{ lineHeight: 1.4 }}>
+                <strong>Tip:</strong> Connect the left handle for success and the right handle for failure
+              </div>
+            </div>
+          </FormSection>
+        )}
+
         {node.data.activityName && activitySchema && (
           <>
             <FormSection title="Configuration">

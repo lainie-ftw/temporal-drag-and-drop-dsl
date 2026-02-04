@@ -47,30 +47,50 @@ function App() {
   const addNode = useCallback((type: string, activityName?: string) => {
     console.log('addNode called with type:', type, 'activityName:', activityName);
     setNodes(prevNodes => {
-      // Count only activity nodes (exclude start and end)
-      const activityNodes = prevNodes.filter(n => n.data.stepType === 'activity');
-      const activityCount = activityNodes.length;
+      // Get viewport center from WorkflowCanvas
+      const getViewportCenter = (window as any).__workflowCanvasGetViewportCenter;
+      const center = getViewportCenter ? getViewportCenter() : { x: 250, y: 200 };
       
-      // Position between Start (y:50) and End (y:400)
-      // Space them evenly: 150, 200, 250, 300, 350
-      const yPosition = 150 + (activityCount * 60);
+      // Add slight offset for multiple nodes added in succession
+      const workflowNodes = prevNodes.filter(n => 
+        n.data.stepType === 'activity' || n.data.stepType === 'condition'
+      );
+      const offset = (workflowNodes.length % 5) * 20; // Slight stagger for visibility
       
-      const newNode: WorkflowNode = {
-        id: `node-${Date.now()}-${Math.random().toString(36).substring(7)}`,
-        type: 'activityNode',
-        position: { 
-          x: 250, 
-          y: yPosition,
-        },
-        data: {
-          label: activityName || 'New Step',
-          activityName,
-          stepType: 'activity',
-          arguments: {},
-        },
-      };
+      const newNode: WorkflowNode = type === 'condition' 
+        ? {
+            id: `node-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+            type: 'conditionNode',
+            position: { 
+              x: center.x + offset, 
+              y: center.y + offset,
+            },
+            data: {
+              label: 'Condition',
+              stepType: 'condition',
+              arguments: {
+                variable: '',
+                operator: 'equals',
+                value: '',
+              },
+            },
+          }
+        : {
+            id: `node-${Date.now()}-${Math.random().toString(36).substring(7)}`,
+            type: 'activityNode',
+            position: { 
+              x: center.x + offset, 
+              y: center.y + offset,
+            },
+            data: {
+              label: activityName || 'New Step',
+              activityName,
+              stepType: 'activity',
+              arguments: {},
+            },
+          };
       
-      console.log('Node added:', newNode, 'Total nodes after add:', prevNodes.length + 1, 'Activity count:', activityCount + 1);
+      console.log('Node added at viewport center:', center, 'with offset:', offset);
       return [...prevNodes, newNode];
     });
   }, []);

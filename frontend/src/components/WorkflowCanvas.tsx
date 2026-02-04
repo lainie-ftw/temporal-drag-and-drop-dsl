@@ -1,10 +1,11 @@
-import React, { useCallback, useRef, useMemo, useEffect } from 'react';
+import React, { useCallback, useRef, useMemo, useEffect, useImperativeHandle, forwardRef } from 'react';
 import ReactFlow, {
   Controls,
   Background,
   addEdge,
   useNodesState,
   useEdgesState,
+  useReactFlow,
   type Connection,
   BackgroundVariant,
   type NodeTypes,
@@ -16,6 +17,7 @@ import 'reactflow/dist/style.css';
 import ActivityNode from './nodes/ActivityNode';
 import StartNode from './nodes/StartNode';
 import EndNode from './nodes/EndNode';
+import ConditionNode from './nodes/ConditionNode';
 import type { WorkflowNode } from '../types/workflow.types';
 
 interface WorkflowCanvasProps {
@@ -26,13 +28,18 @@ interface WorkflowCanvasProps {
   onNodeSelect?: (nodeId: string | null) => void;
 }
 
-const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
+export interface WorkflowCanvasHandle {
+  getViewportCenter: () => { x: number; y: number };
+}
+
+const WorkflowCanvasInner: React.FC<WorkflowCanvasProps> = ({
   initialNodes = [],
   initialEdges = [],
   onNodesChange,
   onEdgesChange,
   onNodeSelect,
 }) => {
+  const reactFlowInstance = useReactFlow();
   const [nodes, setNodes, handleNodesChange] = useNodesState(initialNodes);
   const [edges, setEdges, handleEdgesChange] = useEdgesState(initialEdges);
   
@@ -43,8 +50,36 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
   useEffect(() => {
     // Only sync if the actual nodes array changed (not just a re-render with same data)
     if (initialNodes !== prevInitialNodesRef.current) {
-      console.log('Parent nodes changed, syncing', initialNodes.length, 'nodes to canvas');
-      setNodes(initialNodes);
+      const prevNodes = prevInitialNodesRef.current;
+      const currentNodes = initialNodes;
+      
+      // Check if this is a structural change (added/removed nodes) or just data updates
+      const isStructuralChange = prevNodes.length !== currentNodes.length ||
+        prevNodes.some(pn => !currentNodes.find(cn => cn.id === pn.id)) ||
+        currentNodes.some(cn => !prevNodes.find(pn => pn.id === cn.id));
+      
+      if (isStructuralChange) {
+        // Structural change: use new nodes completely
+        console.log('Structural change detected, syncing', currentNodes.length, 'nodes to canvas');
+        setNodes(currentNodes);
+      } else {
+        // Data-only change: preserve current positions, only update data
+        console.log('Data update detected, preserving positions');
+        setNodes((existingNodes) => {
+          return existingNodes.map(existingNode => {
+            const updatedNode = currentNodes.find(n => n.id === existingNode.id);
+            if (updatedNode) {
+              // Preserve position from existing node, update data from parent
+              return {
+                ...updatedNode,
+                position: existingNode.position,
+              };
+            }
+            return existingNode;
+          });
+        });
+      }
+      
       prevInitialNodesRef.current = initialNodes;
     }
   }, [initialNodes, setNodes]);
@@ -63,6 +98,7 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
     activityNode: ActivityNode,
     startNode: StartNode,
     endNode: EndNode,
+    conditionNode: ConditionNode,
   }), []);
 
   // Default edge styling
@@ -83,23 +119,96 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
 
   const onConnect = useCallback(
     (params: Connection) => {
+      // Find the source node to check if it's a condition
+      const sourceNode = nodes.find(n => n.id === params.source);
+      const isCondition = sourceNode?.data.stepType === 'condition';
+      
+      // Determine edge style based on source handle for condition nodes
+      let edgeStyle: any = { ...defaultEdgeOptions };
+      
+      if (isCondition && params.sourceHandle) {
+        if (params.sourceHandle === 'success') {
+          edgeStyle = {
+            type: 'smoothstep',
+            animated: true,
+            style: { stroke: '#10b981', strokeWidth: 2 },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 20,
+              height: 20,
+              color: '#10b981',
+            },
+            label: '✓ Success',
+            labelStyle: { 
+              fill: '#10b981', 
+              fontWeight: 600,
+              fontSize: '12px',
+            },
+            labelBgStyle: { 
+              fill: '#f0fdf4',
+              fillOpacity: 0.9,
+            },
+            labelBgPadding: [8, 4] as [number, number],
+            labelBgBorderRadius: 4,
+          };
+        } else if (params.sourceHandle === 'failure') {
+          edgeStyle = {
+            type: 'smoothstep',
+            animated: true,
+            style: { stroke: '#ef4444', strokeWidth: 2 },
+            markerEnd: {
+              type: MarkerType.ArrowClosed,
+              width: 20,
+              height: 20,
+              color: '#ef4444',
+            },
+            label: '✗ Failure',
+            labelStyle: { 
+              fill: '#ef4444', 
+              fontWeight: 600,
+              fontSize: '12px',
+            },
+            labelBgStyle: { 
+              fill: '#fef2f2',
+              fillOpacity: 0.9,
+            },
+            labelBgPadding: [8, 4] as [number, number],
+            labelBgBorderRadius: 4,
+          };
+        }
+      }
+      
       const newEdges = addEdge({
         ...params,
-        ...defaultEdgeOptions,
+        ...edgeStyle,
       }, edges);
       setEdges(newEdges);
       onEdgesChange?.(newEdges);
     },
-    [edges, setEdges, onEdgesChange, defaultEdgeOptions]
+    [edges, nodes, setEdges, onEdgesChange, defaultEdgeOptions]
   );
 
   const onNodesChangeInternal = useCallback(
     (changes: any) => {
       handleNodesChange(changes);
-      // Don't sync changes back to parent - parent controls structure
-      // Canvas controls internal state like positions
+      
+      // Sync position changes back to parent to keep positions in sync
+      // This ensures that when data updates come from parent, positions are preserved
+      const hasPositionChange = changes.some((change: any) => 
+        change.type === 'position' && change.dragging === false
+      );
+      
+      if (hasPositionChange && onNodesChange) {
+        // Use setTimeout to ensure state is updated before we read it
+        setTimeout(() => {
+          setNodes((currentNodes) => {
+            onNodesChange(currentNodes);
+            return currentNodes;
+          });
+        }, 0);
+      }
     },
-    [handleNodesChange]
+    [handleNodesChange, onNodesChange, setNodes]
   );
 
   const onNodeClickInternal = useCallback(
@@ -112,6 +221,37 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
   const onPaneClickInternal = useCallback(() => {
     onNodeSelect?.(null);
   }, [onNodeSelect]);
+
+  const getViewportCenter = useCallback(() => {
+    const viewport = reactFlowInstance.getViewport();
+    const zoom = viewport.zoom;
+    
+    // Get the container dimensions
+    const container = reactFlowWrapper.current;
+    if (!container) {
+      return { x: 250, y: 200 }; // Fallback
+    }
+    
+    const bounds = container.getBoundingClientRect();
+    const centerX = bounds.width / 2;
+    const centerY = bounds.height / 2;
+    
+    // Convert screen coordinates to flow coordinates
+    const flowX = (centerX - viewport.x) / zoom;
+    const flowY = (centerY - viewport.y) / zoom;
+    
+    return { x: flowX, y: flowY };
+  }, [reactFlowInstance]);
+
+  // Expose methods to parent via ref
+  useEffect(() => {
+    // Store the method on window for parent to access
+    (window as any).__workflowCanvasGetViewportCenter = getViewportCenter;
+    
+    return () => {
+      delete (window as any).__workflowCanvasGetViewportCenter;
+    };
+  }, [getViewportCenter]);
 
   return (
     <div ref={reactFlowWrapper} style={{ 
@@ -176,5 +316,7 @@ const WorkflowCanvas: React.FC<WorkflowCanvasProps> = ({
     </div>
   );
 };
+
+const WorkflowCanvas = WorkflowCanvasInner;
 
 export default WorkflowCanvas;

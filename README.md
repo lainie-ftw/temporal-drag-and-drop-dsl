@@ -302,13 +302,115 @@ npm run start    # Start production build
 6. Implement activity permission checks
 7. Add comprehensive error handling and logging
 
+## Conditional Workflows
+
+The system supports conditional branching to create dynamic workflows based on runtime values.
+
+### Creating a Condition Node
+
+1. Click the **Condition** button in the Control Flow section
+2. Configure the condition:
+   - **Variable**: The variable name to check (from previous steps)
+   - **Operator**: Comparison operator (equals, notEquals, greaterThan, lessThan, etc.)
+   - **Value**: The value to compare against
+3. Connect the **left handle** (green) for the success path
+4. Connect the **right handle** (red) for the failure path
+
+### Supported Operators
+
+- **equals (==)**: Value equality
+- **notEquals (!=)**: Value inequality
+- **greaterThan (>)**: Numeric greater than
+- **lessThan (<)**: Numeric less than
+- **greaterThanOrEqual (>=)**: Numeric greater than or equal
+- **lessThanOrEqual (<=)**: Numeric less than or equal
+- **exists (?)**: Variable is defined
+- **notExists (!?)**: Variable is undefined
+
+### Example: Conditional Approval Workflow
+
+```yaml
+name: Order Processing with Approval
+description: Process orders with conditional approval step
+version: '1.0'
+root: step-1
+steps:
+  - id: step-1
+    type: activity
+    name: Check Order Amount
+    activityName: transformData
+    arguments:
+      input: '${orderAmount}'
+      operation: uppercase
+    resultVariable: amount
+    next: step-2
+  
+  - id: step-2
+    type: condition
+    name: Requires Approval?
+    arguments:
+      variable: amount
+      operator: greaterThan
+      value: 1000
+    onSuccess: step-3  # Amount > 1000, needs approval
+    onFailure: step-4  # Amount <= 1000, auto-approve
+  
+  - id: step-3
+    type: activity
+    name: Send Approval Request
+    activityName: sendEmail
+    arguments:
+      to: manager@company.com
+      subject: Approval Required
+      body: 'Order amount: ${amount}'
+    next: step-5
+  
+  - id: step-4
+    type: activity
+    name: Auto Approve Order
+    activityName: logMessage
+    arguments:
+      message: 'Order auto-approved: ${amount}'
+      level: info
+    next: step-5
+  
+  - id: step-5
+    type: activity
+    name: Send Confirmation
+    activityName: sendEmail
+    arguments:
+      to: customer@example.com
+      subject: Order Confirmed
+      body: 'Your order has been processed'
+```
+
+### Visual Representation
+
+```
+    [Start]
+       ↓
+ [Check Amount]
+       ↓
+  [Condition]
+     ↙    ↘
+✓Success  ✗Failure
+    ↓        ↓
+[Approval] [Auto]
+    ↓        ↓
+    └────┬───┘
+         ↓
+  [Confirmation]
+         ↓
+      [End]
+```
+
 ## Future Enhancements
 
 - Advanced workflow controls (retry policies, timeouts)
 - Workflow versioning and migration
 - More pre-built activity templates
 - Workflow testing framework
-- Advanced expression evaluation in conditions
+- Compound conditions with AND/OR logic
 - Real-time workflow status updates
 - Workflow metrics and monitoring
 - Activity timeout configuration
