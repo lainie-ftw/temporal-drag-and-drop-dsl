@@ -1,6 +1,8 @@
 # Temporal Visual Workflow Builder
 
-A full-stack TypeScript application for visually creating and executing Temporal workflows using drag-and-drop, with YAML import/export capabilities.
+A full-stack TypeScript application for visually creating and executing Temporal workflows using drag-and-drop, with YAML import/export capabilities. The workflow is executed with a single defined activity that dynamically executes a function call based on the contents of the UI.
+
+<img src="images/screenshot-ui.png" alt="Drag and Drop React UI" width="50%" /><img src="images/screenshot-workflow.png" alt="Workflow View in Temporal UI" width="50%" />
 
 ## Project Structure
 
